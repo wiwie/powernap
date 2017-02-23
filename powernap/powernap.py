@@ -65,8 +65,12 @@ class PowerNap:
             for monitor in monitors_config:
                 if monitor not in [self.PKG, stage2_section]:
                     for items in cfg.items(monitor):
-                        self.load_monitors_config(monitor, items)
+			try:
+                            self.load_monitors_config(monitor, items)
+			except:
+			    print("Error while loading config of monitor %s: %s" % (monitor, sys.exc_info()[0]))
         except:
+	    print "Unexpected error:", sys.exc_info()[0]
             pass
 
         # Load extra config files (/etc/powernap/config.d/*)
@@ -142,29 +146,31 @@ class PowerNap:
     def load_monitors_config(self, monitor, items):
         if monitor == "ProcessMonitor" or monitor == "IOMonitor":
             self.MONITORS.append({"monitor":monitor, "name":items[0], "regex":eval(items[1]), "absent":self.ABSENT_SECONDS})
-        if monitor == "InputMonitor" and (items[1] == "y" or items[1] == "yes"):
+        elif monitor == "InputMonitor" and (items[1] == "y" or items[1] == "yes"):
             if items[0] == "mouse" and self.usb_input_available("mouse"):
                 self.MONITORS.append({"monitor":monitor, "name":items[0], "regex":"mice"})
             elif items[0] == "keyboard" and self.usb_input_available("kbd"):
                 self.MONITORS.append({"monitor":monitor, "name":items[0], "regex":"kbd"})
             #else:
             #    self.MONITORS.append({"monitor":monitor, "name":items[0], "regex":items[1]})
-        if monitor == "ConsoleMonitor" and (items[1] == "y" or items[1] == "yes"):
+        elif monitor == "ConsoleMonitor" and (items[1] == "y" or items[1] == "yes"):
             self.MONITORS.append({"monitor":monitor, "name":items[0]})
-        if monitor == "LoadMonitor":
+        elif monitor == "LoadMonitor":
             self.MONITORS.append({"monitor":monitor, "name":items[0], "threshold":items[1]})
-        if monitor == "TCPMonitor":
+        elif monitor == "TCPMonitor":
             self.MONITORS.append({"monitor":monitor, "name":items[0], "port":items[1], "absent":self.ABSENT_SECONDS})
-        if monitor == "UDPMonitor":
+        elif monitor == "UDPMonitor":
             # If ACTION_METHOD is 0 (PowerSave) and port is 7 or 9, do *NOT* create a monitor
             # This will cause that the WoL monitor to not be able to bind the port or viceversa.
             # TODO: Display a message that port is not being binded!!
             if self.ACTION_METHOD == 0 and (items[1] != 7 or items[1] != 9):
                 self.MONITORS.append({"monitor":monitor, "name":items[0], "port":eval(items[1]), "absent":self.ABSENT_SECONDS})
-        if monitor == "WoLMonitor":
+        elif monitor == "WoLMonitor":
             self.MONITORS.append({"monitor":monitor, "name":items[0], "port":eval(items[1]), "absent":self.ABSENT_SECONDS})
-        if monitor == "DiskMonitor" and (items[1] == "y" or items[1] == "yes"):
+        elif monitor == "DiskMonitor" and (items[1] == "y" or items[1] == "yes"):
             self.MONITORS.append({"monitor":monitor, "name":items[0], "absent":self.ABSENT_SECONDS})
+        else:
+            print("Unknown monitor type %s" % monitor)
 
     def get_monitors(self):
         monitor = []
